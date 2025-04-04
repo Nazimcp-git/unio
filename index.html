@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>College Union Voting</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f5f7fa;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      max-width: 600px;
+      width: 100%;
+      background: #fff;
+      padding: 20px;
+      margin: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border-radius: 10px;
+    }
+    h2,h4,h1 {
+      text-align: center;
+      margin:0;
+      color: #333;
+    }
+    .section {
+      margin: 20px 0;
+    }
+    label {
+      display: block;
+      margin: 10px 0 5px;
+      font-weight: 500;
+    }
+    input {
+      width: 93%;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    .candidates {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+    .candidate {
+      flex: 1 1 45%;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .candidate.selected {
+      border-color: #4caf50;
+      background: #e8f5e9;
+    }
+    .candidate img {
+      width: 100%;
+      max-height: 250px;
+      object-fit: cover;
+      border-radius: 5px;
+    }
+    .submit-btn {
+      background: #4caf50;
+      display: none;
+      color: white;
+      padding: 12px;
+      border: none;
+      width: 100%;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    .submit-btn:hover {
+      background: #45a049;
+    }
+    .one{
+    display: block;
+    }
+    .two{
+    display: none;
+    }
+    .three{
+    display: none;
+    }
+    .four{
+    display: none;
+    }
+    .next{
+    background: #4caf50;
+    
+      color: white;
+      padding: 12px;
+      border: none;
+      width: 92%;
+      font-size: 16px;
+      text-align: center;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+        .back{
+    background: #4caf50;
+    
+      color: white;
+      padding: 12px;
+      border: none;
+      width: 92%;
+      font-size: 16px;
+      text-align: center;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    @media (max-width: 500px) {
+      .candidate {
+        flex: 1 1 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    
+    <h1>NADIA 2025-26</h1>
+    <h2 style="margin-top:-10px; ">Committee Election.</h2>
+    <div class="section one" id="one">
+      <label for="studentName">Student Name</label>
+      <input type="text" id="studentName">
+      <label for="studentClass">Class</label>
+      <input type="number" max="10" id="studentClass">
+      <div class="next" onclick="prEsident()">
+      Next Page
+      </div>
+      
+    </div>
+
+    <div class="section two" id="presidentSection">
+      <h3>Vote for President</h3>
+      <div class="candidates" id="presidentCandidates"></div>
+      <div class="next" onclick="seCratary()">
+      Next Page
+      </div>
+            <div class="back" onclick="onEit()">
+      Previous Page
+      </div>
+    </div>
+
+    <div class="section three" id="secretarySection">
+      <h3>Vote for Secretary</h3>
+      <div class="candidates" id="secretaryCandidates"></div>
+      <div class="next" onclick="trEsearar()">
+      Next Page
+      </div>
+      <div class="back" onclick="prEsident()">
+      Previous Page
+      </div>
+    </div>
+
+    <div class="section four" id="treasurerSection">
+      <h3>Vote for Treasurer</h3>
+      <div class="candidates" id="treasurerCandidates"></div>
+      <div class="next" id="lastnext">
+      Next Page
+      </div>
+      <div class="back" onclick="seCratary()">
+      Previous Page
+      </div>
+    </div>
+
+    <button class="submit-btn" id="btn" onclick="submitVote()">Submit Vote</button>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script>
+  document.addEventListener("DOMContentLoaded", function() {
+    if (localStorage.getItem("visited")) {
+        window.location.href = "/try.html"
+    }
+});
+  
+  
+  
+    const firebaseConfig = {
+    apiKey: "AIzaSyBXJ_RnfjUDi7qPDATWVnS5lSFw6jVRYgo",
+  authDomain: "shopping-e284c.firebaseapp.com",
+  databaseURL: "https://shopping-e284c-default-rtdb.firebaseio.com",
+  projectId: "shopping-e284c",
+  storageBucket: "shopping-e284c.appspot.com",
+  messagingSenderId: "248274428739",
+  appId: "1:248274428739:web:fc30dd9eb1ef83f610c5f6",
+  measurementId: "G-ZXZCK9BW7T"
+
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const candidates = {
+      president: [
+        { id: "swalih", name: "Swalih Jinshad", photo: "swalih.jpg" },
+        { id: "harshad", name: "Harshad Vp", photo: "harshad.jpg" },
+        { id: "aflah", name: "Aflah PP", photo: "pp.jpg" }
+      ],
+      secretary: [
+        { id: "hashimrasheed", name: "Hashim Rasheed", photo: "HASHIM.jpg" },
+        { id: "mishal", name: "Mishal T", photo: "MISHAL.jpg" },
+        { id: "sabithok", name: "Sabith OK", photo: "sabithok.jpg" }
+      ],
+      treasurer: [
+        { id: "ajmal", name: "Ajmal", photo: "ajmal.jpg" },
+        { id: "rinshid", name: "Rinshid", photo: "rinshid.jpg" },
+        { id: "safwan", name: "Safwan", photo: "safwan.jpg" }
+      ]
+    };
+
+    function loadCandidates(role, containerId) {
+      const container = document.getElementById(containerId);
+      candidates[role].forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'candidate';
+        div.id = c.id;
+        div.innerHTML = `<img src="${c.photo}" alt="${c.name}"><p>${c.name}</p>`;
+        div.onclick = () => {
+          document.querySelectorAll(`#${containerId} .candidate`).forEach(el => el.classList.remove('selected'));
+          div.classList.add('selected');
+        }
+        container.appendChild(div);
+      });
+    }
+
+    loadCandidates('president', 'presidentCandidates');
+    loadCandidates('secretary', 'secretaryCandidates');
+    loadCandidates('treasurer', 'treasurerCandidates');
+
+    function getSelectedCandidate(sectionId) {
+      const selected = document.querySelector(`#${sectionId} .candidate.selected`);
+      return selected ? selected.id : null;
+    }
+
+    function submitVote() {
+      const name = document.getElementById('studentName').value;
+      const studentClass = document.getElementById('studentClass').value;
+      const president = getSelectedCandidate('presidentCandidates');
+      const secretary = getSelectedCandidate('secretaryCandidates');
+      const treasurer = getSelectedCandidate('treasurerCandidates');
+
+      if (!name || !studentClass || !president || !secretary || !treasurer) {
+        alert("Please fill all the fields and select all candidates.");
+        return;
+      }
+      
+      
+      const voteData = {
+        name,
+        studentClass,
+        vote: { president, secretary, treasurer },
+        timestamp: Date.now()
+      };
+
+      db.ref('votes').push(voteData).then(() => {
+        localStorage.setItem("visited", "true");
+        window.location.href = "/done.html"
+      });
+    }
+  </script>
+  <script>
+  function onEit(){
+    document.getElementById("one").style.display = "block";
+    document.getElementById("presidentSection").style.display = "none";
+    document.getElementById("secretarySection").style.display = "none";
+    document.getElementById("treasurerSection").style.display = "none";
+    document.getElementById("btn").style.display = "none";
+}
+
+function prEsident(){
+document.body.scrollTop = 0;
+  document.documentElement.scrollTop = 0;
+    document.getElementById("one").style.display = "none";
+    document.getElementById("presidentSection").style.display = "block";
+    document.getElementById("secretarySection").style.display = "none";
+    document.getElementById("treasurerSection").style.display = "none";
+    document.getElementById("btn").style.display = "none";
+}
+function seCratary(){
+document.body.scrollTop = 0;
+  document.documentElement.scrollTop = 0;
+    document.getElementById("one").style.display = "none";
+    document.getElementById("presidentSection").style.display = "none";
+    document.getElementById("secretarySection").style.display = "block";
+    document.getElementById("treasurerSection").style.display = "none";
+    document.getElementById("btn").style.display = "none";
+}
+
+function trEsearar(){
+document.body.scrollTop = 0;
+  document.documentElement.scrollTop = 0;
+    document.getElementById("one").style.display = "none";
+    document.getElementById("presidentSection").style.display = "none";
+    document.getElementById("secretarySection").style.display = "none";
+    document.getElementById("lastnext").style.display = "none";
+    document.getElementById("treasurerSection").style.display = "block";
+    document.getElementById("btn").style.display = "block";
+}
+
+
+  </script>
+</body>
+</html>
