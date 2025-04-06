@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Voting Results</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f0f2f5;
+      color: #333;
+    }
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 40px;
+      color: #2c3e50;
+    }
+    .charts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 30px;
+      justify-content: center;
+    }
+    .chart-box {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      flex: 1 1 45%;
+    }
+    canvas {
+      width: 100% !important;
+      height: 300px !important;
+    }
+    .vote-table {
+      margin-top: 40px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background: #4caf50;
+      color: white;
+    }
+    @media (max-width: 768px) {
+      .charts {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Admin Panel - Voting Results</h1>
+  <div class="charts">
+    <div class="chart-box">
+      <h3>President Votes</h3>
+      <canvas id="presChart"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>Secretary Votes</h3>
+      <canvas id="secChart"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>Treasurer Votes</h3>
+      <canvas id="treChart"></canvas>
+    </div>
+  </div>
+
+  <div class="vote-table">
+    <h3 style="padding: 20px;">All Votes</h3>
+    <table>
+      <thead>
+      <tr>
+        <th>Name</th>
+        <th>Class</th>
+        <th>President</th>
+        <th>Secretary</th>
+        <th>Treasurer</th>
+        <th>Time</th>
+      </tr>
+      </thead>
+      <tbody id="voteList"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBXJ_RnfjUDi7qPDATWVnS5lSFw6jVRYgo",
+  authDomain: "shopping-e284c.firebaseapp.com",
+  databaseURL: "https://shopping-e284c-default-rtdb.firebaseio.com",
+  projectId: "shopping-e284c",
+  storageBucket: "shopping-e284c.appspot.com",
+  messagingSenderId: "248274428739",
+  appId: "1:248274428739:web:fc30dd9eb1ef83f610c5f6",
+  measurementId: "G-ZXZCK9BW7T"
+
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  const presCount = {}, secCount = {}, treCount = {};
+
+  const voteList = document.getElementById('voteList');
+
+  db.ref('votes').on('value', snapshot => {
+    const data = snapshot.val();
+    voteList.innerHTML = '';
+    Object.values(presCount).forEach((_, k) => presCount[k] = 0);
+    Object.values(secCount).forEach((_, k) => secCount[k] = 0);
+    Object.values(treCount).forEach((_, k) => treCount[k] = 0);
+
+    for (let key in data) {
+      const vote = data[key];
+
+      presCount[vote.vote.president] = (presCount[vote.vote.president] || 0) + 1;
+      secCount[vote.vote.secretary] = (secCount[vote.vote.secretary] || 0) + 1;
+      treCount[vote.vote.treasurer] = (treCount[vote.vote.treasurer] || 0) + 1;
+
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${vote.name}</td>
+        <td>${vote.studentClass}</td>
+        <td>${vote.vote.president}</td>
+        <td>${vote.vote.secretary}</td>
+        <td>${vote.vote.treasurer}</td>
+        <td>${new Date(vote.timestamp).toLocaleString()}</td>
+      `;
+      voteList.appendChild(row);
+    }
+    updateCharts();
+  });
+
+  let presChart, secChart, treChart;
+
+  function updateCharts() {
+    const presData = Object.entries(presCount);
+    const secData = Object.entries(secCount);
+    const treData = Object.entries(treCount);
+
+    renderChart('presChart', presData, 'President', presChart);
+    renderChart('secChart', secData, 'Secretary', secChart);
+    renderChart('treChart', treData, 'Treasurer', treChart);
+  }
+
+  function renderChart(id, data, label, chartRef) {
+    const labels = data.map(d => d[0]);
+    const values = data.map(d => d[1]);
+    if (chartRef) chartRef.destroy();
+
+    const ctx = document.getElementById(id).getContext('2d');
+    chartRef = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: `${label} Votes`,
+          data: values,
+          backgroundColor: '#4caf50'
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { stepSize: 1 }
+          }
+        }
+      }
+    });
+    if (label === 'President') presChart = chartRef;
+    if (label === 'Secretary') secChart = chartRef;
+    if (label === 'Treasurer') treChart = chartRef;
+  }
+</script>
+</body>
+</html>
