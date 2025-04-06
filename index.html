@@ -250,6 +250,7 @@
     }
 
     function submitVote() {
+      document.getElementById("btn").style.display = "none";
       const name = document.getElementById('studentName').value;
       const studentClass = document.getElementById('studentClass').value;
       const president = getSelectedCandidate('presidentCandidates');
