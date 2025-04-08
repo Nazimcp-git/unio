@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin Panel - Voting Results</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -61,6 +61,11 @@
       background: #4caf50;
       color: white;
     }
+    #classFilter {
+      padding: 5px 10px;
+      border-radius: 5px;
+      margin-top: 10px;
+    }
     @media (max-width: 768px) {
       .charts {
         flex-direction: column;
@@ -71,6 +76,7 @@
 <body>
 <div class="container">
   <h1>Admin Panel - Voting Results</h1>
+
   <div class="charts">
     <div class="chart-box">
       <h3>President Votes</h3>
@@ -87,17 +93,33 @@
   </div>
 
   <div class="vote-table">
-    <h3 style="padding: 20px;">All Votes</h3>
+    <div style="padding: 20px;">
+      <h3>All Votes</h3>
+      <label for="classFilter">Filter by Class:</label>
+      <select id="classFilter">
+        <option value="all">All</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+        <option value="8">8</option>
+        <option value="9">9</option>
+        <option value="10">10</option>
+      </select>
+    </div>
     <table>
       <thead>
-      <tr>
-        <th>Name</th>
-        <th>Class</th>
-        <th>President</th>
-        <th>Secretary</th>
-        <th>Treasurer</th>
-        <th>Time</th>
-      </tr>
+        <tr>
+          <th>Name</th>
+          <th>Class</th>
+          <th>President</th>
+          <th>Secretary</th>
+          <th>Treasurer</th>
+          <th>Time</th>
+        </tr>
       </thead>
       <tbody id="voteList"></tbody>
     </table>
@@ -110,31 +132,44 @@
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyBXJ_RnfjUDi7qPDATWVnS5lSFw6jVRYgo",
-  authDomain: "shopping-e284c.firebaseapp.com",
-  databaseURL: "https://shopping-e284c-default-rtdb.firebaseio.com",
-  projectId: "shopping-e284c",
-  storageBucket: "shopping-e284c.appspot.com",
-  messagingSenderId: "248274428739",
-  appId: "1:248274428739:web:fc30dd9eb1ef83f610c5f6",
-  measurementId: "G-ZXZCK9BW7T"
-
+    authDomain: "shopping-e284c.firebaseapp.com",
+    databaseURL: "https://shopping-e284c-default-rtdb.firebaseio.com",
+    projectId: "shopping-e284c",
+    storageBucket: "shopping-e284c.appspot.com",
+    messagingSenderId: "248274428739",
+    appId: "1:248274428739:web:fc30dd9eb1ef83f610c5f6",
+    measurementId: "G-ZXZCK9BW7T"
   };
+
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
   const presCount = {}, secCount = {}, treCount = {};
-
   const voteList = document.getElementById('voteList');
+  const classFilter = document.getElementById('classFilter');
+  let allVotes = {};
+
+  classFilter.addEventListener('change', () => {
+    renderVoteTable();
+  });
 
   db.ref('votes').on('value', snapshot => {
     const data = snapshot.val();
-    voteList.innerHTML = '';
-    Object.values(presCount).forEach((_, k) => presCount[k] = 0);
-    Object.values(secCount).forEach((_, k) => secCount[k] = 0);
-    Object.values(treCount).forEach((_, k) => treCount[k] = 0);
+    allVotes = data || {};
+    renderVoteTable();
+  });
 
-    for (let key in data) {
-      const vote = data[key];
+  function renderVoteTable() {
+    voteList.innerHTML = '';
+    const selectedClass = classFilter.value;
+
+    Object.keys(presCount).forEach(k => presCount[k] = 0);
+    Object.keys(secCount).forEach(k => secCount[k] = 0);
+    Object.keys(treCount).forEach(k => treCount[k] = 0);
+
+    for (let key in allVotes) {
+      const vote = allVotes[key];
+      if (selectedClass !== "all" && vote.studentClass !== selectedClass) continue;
 
       presCount[vote.vote.president] = (presCount[vote.vote.president] || 0) + 1;
       secCount[vote.vote.secretary] = (secCount[vote.vote.secretary] || 0) + 1;
@@ -151,28 +186,26 @@
       `;
       voteList.appendChild(row);
     }
+
     updateCharts();
-  });
+  }
 
   let presChart, secChart, treChart;
 
   function updateCharts() {
-    const presData = Object.entries(presCount);
-    const secData = Object.entries(secCount);
-    const treData = Object.entries(treCount);
-
-    renderChart('presChart', presData, 'President', presChart);
-    renderChart('secChart', secData, 'Secretary', secChart);
-    renderChart('treChart', treData, 'Treasurer', treChart);
+    renderChart('presChart', Object.entries(presCount), 'President', presChart);
+    renderChart('secChart', Object.entries(secCount), 'Secretary', secChart);
+    renderChart('treChart', Object.entries(treCount), 'Treasurer', treChart);
   }
 
   function renderChart(id, data, label, chartRef) {
     const labels = data.map(d => d[0]);
     const values = data.map(d => d[1]);
+
     if (chartRef) chartRef.destroy();
 
     const ctx = document.getElementById(id).getContext('2d');
-    chartRef = new Chart(ctx, {
+    const newChart = new Chart(ctx, {
       type: 'bar',
       data: {
         labels: labels,
@@ -192,9 +225,10 @@
         }
       }
     });
-    if (label === 'President') presChart = chartRef;
-    if (label === 'Secretary') secChart = chartRef;
-    if (label === 'Treasurer') treChart = chartRef;
+
+    if (label === 'President') presChart = newChart;
+    if (label === 'Secretary') secChart = newChart;
+    if (label === 'Treasurer') treChart = newChart;
   }
 </script>
 </body>
